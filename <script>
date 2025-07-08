@@ -1,0 +1,217 @@
+document.addEventListener('DOMContentLoaded', function() {
+    // Elementos do DOM
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const imageUpload = document.getElementById('imageUpload');
+    const imageContainer = document.querySelector('.image-container');
+    const placeholderText = document.querySelector('.placeholder-text');
+    const drawBtn = document.getElementById('drawBtn');
+    const textBtn = document.getElementById('textBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const drawingColor = document.getElementById('drawingColor');
+    const textControls = document.getElementById('textControls');
+    const textInput = document.getElementById('textInput');
+    const textColor = document.getElementById('textColor');
+    const addTextBtn = document.getElementById('addTextBtn');
+    const cancelTextBtn = document.getElementById('cancelTextBtn');
+    
+    // Variáveis de estado
+    let isDrawing = false;
+    let currentMode = 'none'; // 'draw', 'text'
+    let originalImage = null;
+    
+    // Configurações iniciais
+    canvas.width = imageContainer.offsetWidth - 4;
+    canvas.height = imageContainer.offsetHeight - 4;
+    
+    // Event Listeners
+    imageUpload.addEventListener('change', handleImageUpload);
+    imageContainer.addEventListener('dragover', handleDragOver);
+    imageContainer.addEventListener('drop', handleDrop);
+    drawBtn.addEventListener('click', () => setMode('draw'));
+    textBtn.addEventListener('click', () => setMode('text'));
+    clearBtn.addEventListener('click', clearCanvas);
+    downloadBtn.addEventListener('click', downloadImage);
+    addTextBtn.addEventListener('click', addTextToCanvas);
+    cancelTextBtn.addEventListener('click', () => setMode('none'));
+    
+    // Eventos para desenho
+    canvas.addEventListener('mousedown', startDrawing);
+    canvas.addEventListener('mousemove', draw);
+    canvas.addEventListener('mouseup', stopDrawing);
+    canvas.addEventListener('mouseout', stopDrawing);
+    
+    // Funções
+    function handleImageUpload(e) {
+        const file = e.target.files[0];
+        if (file && file.type.match('image.*')) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                loadImage(event.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    
+    function handleDragOver(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        imageContainer.style.borderColor = '#4CAF50';
+    }
+    
+    function handleDrop(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        imageContainer.style.borderColor = '#ccc';
+        
+        const file = e.dataTransfer.files[0];
+        if (file && file.type.match('image.*')) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                loadImage(event.target.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    
+    function loadImage(src) {
+        const img = new Image();
+        img.onload = function() {
+            originalImage = img;
+            
+            // Ajustar o canvas para o tamanho da imagem (mantendo proporção)
+            const maxWidth = imageContainer.offsetWidth - 4;
+            const maxHeight = imageContainer.offsetHeight - 4;
+            
+            let width = img.width;
+            let height = img.height;
+            
+            if (width > maxWidth) {
+                const ratio = maxWidth / width;
+                width = maxWidth;
+                height = height * ratio;
+            }
+            
+            if (height > maxHeight) {
+                const ratio = maxHeight / height;
+                height = maxHeight;
+                width = width * ratio;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.style.display = 'block';
+            placeholderText.style.display = 'none';
+        };
+        img.src = src;
+    }
+    
+    function setMode(mode) {
+        currentMode = mode;
+        
+        if (mode === 'draw') {
+            textControls.style.display = 'none';
+            canvas.style.cursor = 'crosshair';
+        } else if (mode === 'text') {
+            textControls.style.display = 'flex';
+            canvas.style.cursor = 'text';
+        } else {
+            textControls.style.display = 'none';
+            canvas.style.cursor = 'default';
+        }
+    }
+    
+    function startDrawing(e) {
+        if (currentMode !== 'draw' || !originalImage) return;
+        
+        isDrawing = true;
+        draw(e);
+    }
+    
+    function draw(e) {
+        if (!isDrawing || currentMode !== 'draw' || !originalImage) return;
+        
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 5;
+        ctx.strokeStyle = drawingColor.value;
+        
+        if (isDrawing) {
+            ctx.lineTo(x, y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+        }
+    }
+    
+    function stopDrawing() {
+        if (currentMode !== 'draw') return;
+        
+        isDrawing = false;
+        ctx.beginPath();
+    }
+    
+    function addTextToCanvas() {
+        if (!originalImage || !textInput.value) return;
+        
+        // Posição central como padrão
+        const x = canvas.width / 2;
+        const y = canvas.height / 2;
+        
+        ctx.font = '20px Arial';
+        ctx.fillStyle = textColor.value;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(textInput.value, x, y);
+        
+        // Limpar o input e sair do modo texto
+        textInput.value = '';
+        setMode('none');
+    }
+    
+    function clearCanvas() {
+        if (!originalImage) return;
+        
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(originalImage, 0, 0, canvas.width, canvas.height);
+    }
+    
+    function downloadImage() {
+        if (!originalImage) {
+            alert('Por favor, carregue uma imagem primeiro.');
+            return;
+        }
+        
+        const link = document.createElement('a');
+        link.download = 'imagem-editada.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+    }
+    
+    // Redimensionar canvas quando a janela for redimensionada
+    window.addEventListener('resize', function() {
+        if (originalImage) {
+            // Mantém a imagem atual, apenas redimensiona o canvas
+            const tempCanvas = document.createElement('canvas');
+            const tempCtx = tempCanvas.getContext('2d');
+            
+            tempCanvas.width = canvas.width;
+            tempCanvas.height = canvas.height;
+            tempCtx.drawImage(canvas, 0, 0);
+            
+            // Redimensiona o canvas principal
+            canvas.width = imageContainer.offsetWidth - 4;
+            canvas.height = imageContainer.offsetHeight - 4;
+            
+            // Redesenha a imagem temporária no canvas redimensionado
+            ctx.drawImage(tempCanvas, 0, 0, canvas.width, canvas.height);
+        }
+    });
+});
