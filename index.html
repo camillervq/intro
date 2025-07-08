@@ -1,116 +1,452 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Editor de Imagens</title>
+    <title>Criador de Cartões de Apresentação</title>
     <style>
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        :root {
+            --primary-color: #4a6fa5;
+            --secondary-color: #166088;
+            --background-color: #f8f9fa;
+            --text-color: #333;
+            --card-bg: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
             margin: 0;
-            padding: 20px;
-            background-color: #f5f5f5;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
+        body {
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
         .container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
-            background: white;
             padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
         h1 {
-            text-align: center;
-            color: #333;
+            color: var(--primary-color);
+            margin-bottom: 10px;
         }
-        .editor-container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-        .image-container {
-            position: relative;
-            border: 2px dashed #ccc;
-            min-height: 300px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #f9f9f9;
-        }
-        #canvas {
-            max-width: 100%;
-            max-height: 400px;
-            display: none;
-        }
-        .placeholder-text {
-            color: #888;
-            text-align: center;
-            padding: 20px;
-        }
-        .controls {
+
+        .card-creator {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 30px;
+        }
+
+        .form-section {
+            flex: 1;
+            min-width: 300px;
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .preview-section {
+            flex: 1;
+            min-width: 300px;
+            position: relative;
+        }
+
+        .form-group {
             margin-bottom: 20px;
         }
-        button, input[type="color"], input[type="file"] {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--secondary-color);
+        }
+
+        input[type="text"],
+        input[type="date"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .slider-label {
+            min-width: 80px;
+            text-align: center;
+        }
+
+        input[type="range"] {
+            flex-grow: 1;
+            height: 8px;
+            -webkit-appearance: none;
+            background: #ddd;
+            border-radius: 5px;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--primary-color);
+            border-radius: 50%;
             cursor: pointer;
         }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        .text-controls {
-            margin-top: 10px;
+
+        .checkbox-group {
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
+            margin-top: 10px;
         }
-        #textInput {
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .card-preview {
+            background-color: var(--card-bg);
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+            position: relative;
+            min-height: 500px;
+            background-image: url('https://via.placeholder.com/500x700/ffffff/cccccc?text=Template+Card');
+            background-size: cover;
+            background-position: center;
+        }
+
+        .preview-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-name {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #fff;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+        }
+
+        .preview-title {
+            font-size: 18px;
+            margin-bottom: 20px;
+            color: #fff;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+        }
+
+        .preview-about {
+            margin-top: auto;
+            background-color: rgba(255, 255, 255, 0.8);
+            padding: 15px;
+            border-radius: 5px;
+        }
+
+        .trait-indicator {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .trait-name {
+            width: 100px;
+        }
+
+        .trait-bar {
             flex-grow: 1;
+            height: 10px;
+            background-color: #ddd;
+            border-radius: 5px;
+            overflow: hidden;
+            margin: 0 10px;
+        }
+
+        .trait-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 50%;
+        }
+
+        .download-btn {
+            margin-top: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .card-creator {
+                flex-direction: column;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Editor de Imagens</h1>
-        
-        <div class="editor-container">
-            <div class="controls">
-                <input type="file" id="imageUpload" accept="image/*">
-                <input type="color" id="drawingColor" value="#000000">
-                <button id="drawBtn">Desenhar</button>
-                <button id="textBtn">Adicionar Texto</button>
-                <button id="clearBtn">Limpar</button>
-                <button id="downloadBtn">Download</button>
+        <header>
+            <h1>Criador de Cartões de Apresentação</h1>
+            <p>Crie seu cartão personalizado para se apresentar à comunidade</p>
+        </header>
+
+        <div class="card-creator">
+            <div class="form-section">
+                <h2>Preencha seus dados</h2>
+                <form id="card-form">
+                    <div class="form-group">
+                        <label for="name">Nome</label>
+                        <input type="text" id="name" placeholder="Seu nome completo">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="title">Título/Role</label>
+                        <input type="text" id="title" placeholder="Ex: Desenvolvedor, Designer, etc.">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="join-date">Data de entrada</label>
+                        <input type="date" id="join-date">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="country">País</label>
+                        <input type="text" id="country" placeholder="Seu país">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="timezone">Fuso horário</label>
+                        <input type="text" id="timezone" placeholder="Ex: UTC-3">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Personalidade</label>
+                        <div class="trait-container">
+                            <div class="form-group">
+                                <label>Introvertido <-> Extrovertido</label>
+                                <div class="slider-container">
+                                    <span class="slider-label">Intro</span>
+                                    <input type="range" id="introvert" min="0" max="100" value="50">
+                                    <span class="slider-label">Extro</span>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Observador <-> Ativo</label>
+                                <div class="slider-container">
+                                    <span class="slider-label">Observador</span>
+                                    <input type="range" id="observer" min="0" max="100" value="50">
+                                    <span class="slider-label">Ativo</span>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Calmo <-> Energético</label>
+                                <div class="slider-container">
+                                    <span class="slider-label">Calmo</span>
+                                    <input type="range" id="calm" min="0" max="100" value="50">
+                                    <span class="slider-label">Energético</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Idiomas que fala</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="lang-pt" checked>
+                                <label for="lang-pt">Português</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="lang-en">
+                                <label for="lang-en">Inglês</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="lang-es">
+                                <label for="lang-es">Espanhol</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="lang-fr">
+                                <label for="lang-fr">Francês</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="text" id="lang-other" placeholder="Outros">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="about">Sobre mim</label>
+                        <textarea id="about" placeholder="Conte um pouco sobre você"></textarea>
+                    </div>
+
+                    <button type="button" id="generate-btn">Gerar Cartão</button>
+                </form>
             </div>
-            
-            <div class="text-controls" id="textControls" style="display: none;">
-                <input type="text" id="textInput" placeholder="Digite seu texto">
-                <input type="color" id="textColor" value="#000000">
-                <button id="addTextBtn">Adicionar</button>
-                <button id="cancelTextBtn">Cancelar</button>
-            </div>
-            
-            <div class="image-container">
-                <p class="placeholder-text">Arraste e solte uma imagem aqui ou clique para selecionar</p>
-                <canvas id="canvas"></canvas>
+
+            <div class="preview-section">
+                <h2>Pré-visualização</h2>
+                <div class="card-preview">
+                    <div class="preview-content">
+                        <div class="preview-name" id="preview-name">Seu Nome</div>
+                        <div class="preview-title" id="preview-title">Seu Título/Role</div>
+                        
+                        <div class="preview-traits">
+                            <div class="trait-indicator">
+                                <div class="trait-name">Intro/Extro</div>
+                                <div class="trait-bar">
+                                    <div class="trait-fill" id="intro-fill" style="width: 50%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="trait-indicator">
+                                <div class="trait-name">Observador/Ativo</div>
+                                <div class="trait-bar">
+                                    <div class="trait-fill" id="observer-fill" style="width: 50%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="trait-indicator">
+                                <div class="trait-name">Calmo/Energético</div>
+                                <div class="trait-bar">
+                                    <div class="trait-fill" id="calm-fill" style="width: 50%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="preview-about" id="preview-about">
+                            Aqui aparecerá o texto que você escrever sobre você.
+                        </div>
+                    </div>
+                </div>
+                <button class="download-btn" id="download-btn" disabled>Baixar Cartão</button>
             </div>
         </div>
     </div>
 
     <script>
-        // JavaScript será adicionado aqui
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elementos do formulário
+            const nameInput = document.getElementById('name');
+            const titleInput = document.getElementById('title');
+            const joinDateInput = document.getElementById('join-date');
+            const countryInput = document.getElementById('country');
+            const timezoneInput = document.getElementById('timezone');
+            const introvertSlider = document.getElementById('introvert');
+            const observerSlider = document.getElementById('observer');
+            const calmSlider = document.getElementById('calm');
+            const aboutTextarea = document.getElementById('about');
+            const generateBtn = document.getElementById('generate-btn');
+            const downloadBtn = document.getElementById('download-btn');
+            
+            // Elementos de pré-visualização
+            const previewName = document.getElementById('preview-name');
+            const previewTitle = document.getElementById('preview-title');
+            const previewAbout = document.getElementById('preview-about');
+            const introFill = document.getElementById('intro-fill');
+            const observerFill = document.getElementById('observer-fill');
+            const calmFill = document.getElementById('calm-fill');
+            
+            // Atualizar pré-visualização em tempo real
+            nameInput.addEventListener('input', updatePreview);
+            titleInput.addEventListener('input', updatePreview);
+            aboutTextarea.addEventListener('input', updatePreview);
+            introvertSlider.addEventListener('input', updatePreview);
+            observerSlider.addEventListener('input', updatePreview);
+            calmSlider.addEventListener('input', updatePreview);
+            
+            // Configurar data atual como padrão
+            const today = new Date().toISOString().split('T')[0];
+            joinDateInput.value = today;
+            
+            // Função para atualizar a pré-visualização
+            function updatePreview() {
+                previewName.textContent = nameInput.value || 'Seu Nome';
+                previewTitle.textContent = titleInput.value || 'Seu Título/Role';
+                previewAbout.textContent = aboutTextarea.value || 'Aqui aparecerá o texto que você escrever sobre você.';
+                
+                introFill.style.width = `${introvertSlider.value}%`;
+                observerFill.style.width = `${observerSlider.value}%`;
+                calmFill.style.width = `${calmSlider.value}%`;
+            }
+            
+            // Gerar cartão final
+            generateBtn.addEventListener('click', function() {
+                // Aqui você pode adicionar lógica para gerar a imagem final
+                // Por enquanto, apenas habilitamos o botão de download
+                downloadBtn.disabled = false;
+                alert('Cartão gerado com sucesso! Agora você pode baixá-lo.');
+            });
+            
+            // Baixar cartão (simulação)
+            downloadBtn.addEventListener('click', function() {
+                // Em uma implementação real, aqui você usaria uma biblioteca como html2canvas
+                // para converter o cartão em uma imagem e fazer o download
+                alert('Funcionalidade de download será implementada aqui');
+                
+                // Exemplo de como seria com html2canvas:
+                /*
+                html2canvas(document.querySelector('.card-preview')).then(canvas => {
+                    const link = document.createElement('a');
+                    link.download = 'meu-cartao.png';
+                    link.href = canvas.toDataURL();
+                    link.click();
+                });
+                */
+            });
+            
+            // Inicializar a pré-visualização
+            updatePreview();
+        });
     </script>
 </body>
 </html>
