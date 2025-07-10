@@ -852,16 +852,63 @@
         }
         
         // Baixa a imagem do card
-        document.getElementById('download-btn').addEventListener('click', function() {
-            const cardPreview = document.getElementById('card-preview');
+       document.getElementById('download-btn').addEventListener('click', async function() {
+    const cardPreview = document.getElementById('card-preview');
+    const btn = this;
+    
+    try {
+        // Feedback visual
+        btn.disabled = true;
+        btn.innerHTML = 'Gerando imagem...';
+        
+        // Opções do html2canvas
+        const options = {
+            scale: 1,
+            useCORS: true,
+            allowTaint: false, // Mudamos para false por segurança
+            logging: true,
+            backgroundColor: '#073576'
+        };
+        
+        // Geramos o canvas
+        const canvas = await html2canvas(cardPreview, options);
+        
+        // Usamos toBlob() em vez de toDataURL()
+        canvas.toBlob((blob) => {
+            if (!blob) {
+                throw new Error('Falha ao gerar blob');
+            }
             
-            html2canvas(cardPreview).then(canvas => {
-                const link = document.createElement('a');
-                link.download = 'meu-card-de-apresentacao.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            });
-        });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = 'meu-card-de-apresentacao.png';
+            link.href = url;
+            link.click();
+            
+            // Liberamos a memória
+            setTimeout(() => URL.revokeObjectURL(url), 100);
+        }, 'image/png', 0.9); // Qualidade 90%
+        
+    } catch (error) {
+        console.error('Erro detalhado:', error);
+        
+        // Fallback para toDataURL() se toBlob falhar
+        try {
+            const canvas = await html2canvas(cardPreview, options);
+            const dataURL = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'meu-card-de-apresentacao.png';
+            link.href = dataURL;
+            link.click();
+        } catch (fallbackError) {
+            alert('Erro ao gerar imagem. Tente novamente ou use outro navegador.');
+            console.error('Erro no fallback:', fallbackError);
+        }
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Baixar Imagem';
+    }
+});
         
         // Adiciona as estrelinhas quando a página carrega
         window.addEventListener('load', addStars);
