@@ -854,16 +854,146 @@
         }
         
         // Baixa a imagem do card
-        document.getElementById('download-btn').addEventListener('click', function() {
-            const cardPreview = document.getElementById('card-preview');
-            
-            html2canvas(cardPreview).then(canvas => {
-                const link = document.createElement('a');
-                link.download = 'meu-card-de-apresentacao.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
+        document.getElementById('download-btn').addEventListener('click', async function() {
+    const btn = this;
+    const cardPreview = document.getElementById('card-preview');
+    
+    // 1. Configuração à prova de erros
+    const options = {
+        scale: 1,
+        useCORS: true,       // Ativa CORS explicitamente
+        allowTaint: false,   // Impede canvases contaminados
+        logging: true,       // Mostra logs no console
+        backgroundColor: '#073576',
+        ignoreElements: (el) => {
+            // Ignora elementos com problemas conhecidos
+            return el.tagName === 'IFRAME' || el.classList.contains('no-capture');
+        }
+    };
+
+    try {
+        // 2. Pré-carregamento seguro de imagens
+        const loadImage = (src) => {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.crossOrigin = 'Anonymous'; // Crucial para CORS
+                img.src = src;
+                img.onload = () => resolve(img);
+                img.onerror = (err) => reject(err);
             });
-        });
+        };
+
+        // Carrega todas as imagens do card
+        const images = Array.from(cardPreview.querySelectorAll('img'));
+        await Promise.all(images.map(img => {
+            if (!img.complete) {
+                return loadImage(img.src)
+                    .then(() => {
+                        img.setAttribute('crossorigin', 'anonymous');
+                    })
+                    .catch(err => {
+                        console.warn('Falha ao carregar imagem:', img.src, err);
+                        img.style.display = 'none'; // Oculta imagens problemáticas
+                    });
+            }
+            return Promise.resolve();
+        }));
+
+        // 3. Geração do canvas com tratamento de erro
+        const canvas = await html2canvas(cardPreview, options)
+            .catch(err => {
+                console.error('Erro html2canvas:', err);
+                throw new Error('Falha na renderização. Tente sem imagens temporariamente.');
+            });
+
+        // 4. Método de download ultracompatível
+        try {
+            // Tenta primeiro com toBlob (mais seguro)
+            const blob = await new Promise((resolve) => {
+                canvas.toBlob(resolve, 'image/png', 0.9);
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = `card-${new Date().getTime()}.png`;
+            link.href = url;
+            
+            // Método mais confiável para clique
+            document.body.appendChild(link);
+            link.click();
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }, 100);
+            
+        } catch (blobError) {
+            // Fallback para toDataURL com tratamento especial
+            try {
+                const dataUrl = canvas.toDataURL('image/png');
+                const win = window.open();
+                win.document.write(`
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <title>Salve seu card</title>
+                        <style>
+                            body { text-align: center; padding: 20px; font-family: Arial; }
+                            img { max-width: 90%; margin: 20px auto; border: 1px solid #ddd; }
+                            button { padding: 10px 20px; background: #073576; color: white; border: none; border-radius: 5px; cursor: pointer; }
+                        </style>
+                    </head>
+                    <body>
+                        <h2>Salve seu card manualmente</h2>
+                        <p>Clique com o botão direito na imagem e selecione "Salvar imagem como..."</p>
+                        <img src="${dataUrl}" alt="Card da Comunidade">
+                        <div>
+                            <button onclick="window.close()">Fechar</button>
+                        </div>
+                    </body>
+                    </html>
+                `);
+                win.document.close();
+            } catch (finalError) {
+                throw new Error('Não foi possível gerar a imagem. Por favor, tire um print manual (Ctrl+PrtSc).');
+            }
+        }
+        
+    } catch (error) {
+        // Feedback visual detalhado
+        const errorBox = document.createElement('div');
+        errorBox.style.cssText = `
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #fff3f3;
+            padding: 20px;
+            border: 2px solid #ff6b6b;
+            border-radius: 8px;
+            z-index: 10000;
+            max-width: 80%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        `;
+        
+        errorBox.innerHTML = `
+            <h3 style="color:#ff5252;margin-top:0;">⚠️ Erro ao Gerar Card</h3>
+            <p>${error.message}</p>
+            <div style="margin-top:15px;">
+                <button onclick="this.parentNode.parentNode.remove()" 
+                        style="padding:8px 16px; background:#ff6b6b; color:white; border:none; border-radius:4px; cursor:pointer;">
+                    Fechar
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(errorBox);
+        console.error('Erro completo:', error);
+        
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Baixar Card';
+    }
+});     
         // Adiciona as estrelinhas quando a página carrega
         window.addEventListener('load', addStars);
     </script>
